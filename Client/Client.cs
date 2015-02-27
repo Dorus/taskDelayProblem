@@ -14,6 +14,8 @@ namespace Client {
         }
 
         List<Task> tasks = new List<Task>();
+        Object lockme = new Object();
+
 
         private async Task displayThreads() {
             Stopwatch sw = new Stopwatch();
@@ -30,18 +32,19 @@ namespace Client {
         private void makeClient(int delay, int startDelay) {
             Task task = new ClientConnection(this, delay, startDelay).connectAsync();
             task.ContinueWith(_ => {
-                lock (tasks) { tasks.Remove(task); }
-            });
-            lock (tasks) { tasks.Add(task); }
+                lock (lockme) { tasks.Remove(task); }
+            }, TaskContinuationOptions.ExecuteSynchronously
+            );
+            lock (lockme) { tasks.Add(task); }
         }
 
         private void makeClient(int delay) {
             makeClient(delay, 0);
         }
 
-        private static void waitForTasks(List<Task> tasks) {
+        private void waitForTasks(List<Task> tasks) {
             Task[] waitFor;
-            lock (tasks) {
+            lock (lockme) {
                 waitFor = tasks.ToArray();
             }
             Task.WaitAll(waitFor);
