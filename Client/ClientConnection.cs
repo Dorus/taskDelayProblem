@@ -28,7 +28,7 @@ namespace Client {
             this.startDelay = startDelay;
         }
 
-        private byte[] emptyByteArray = new Byte[0];
+        private Byte[] b = new Byte[750];
 
         public async Task connectAsync() {
             int con2 = Interlocked.Increment(ref openingConnections);
@@ -52,12 +52,8 @@ namespace Client {
 
                     int count = 0;
                     while (true) {
-                        await stream.ReadAsync(emptyByteArray, 0, 0);
-
                         var beginRead = sw.Elapsed;
-
-                        Byte[] b = new Byte[750];
-                        int r = stream.Read(new Byte[750], 0, 750);
+                        int r = await stream.ReadAsync(b, 0, 750);
 
                         var readTime = sw.Elapsed.Subtract(beginRead).TotalMilliseconds;
                         if (readTime > 20) {
@@ -66,9 +62,7 @@ namespace Client {
 
                         if (r < 750 || b[0] == (Byte)'S') break;
                         if (count == 0) start = sw.Elapsed;
-                        
                         count++;
-                        
                         var preDelay = sw.Elapsed;
                         if (preDelay.Subtract(beginRead).TotalMilliseconds > 50) {
                             Console.WriteLine("Slowly {0}", sw.Elapsed.Subtract(beginRead).TotalMilliseconds);
