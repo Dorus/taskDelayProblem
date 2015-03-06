@@ -14,58 +14,26 @@ namespace Client {
         }
 
         List<Task> tasks = new List<Task>();
-        Object lockme = new Object();
-
-
-        private async Task displayThreads() {
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
-            for (int i = 0; i < 32; i++) {
-                int counter = System.Diagnostics.Process.GetCurrentProcess().Threads.Count;
-                Console.WriteLine("Threads.Count: {0} {1:0.00}s", counter, sw.ElapsedMilliseconds / 1000);
-                //await Task.Delay(2000);
-                Thread.Sleep(2000);
-                await Task.Yield();
-            }
-        }
-
         private void makeClient(int delay, int startDelay) {
             Task task = new ClientConnection(this, delay, startDelay).connectAsync();
-            task.ContinueWith(_ => {
-                lock (lockme) { tasks.Remove(task); }
-            }, TaskContinuationOptions.ExecuteSynchronously
-            );
-            lock (lockme) { tasks.Add(task); }
+            tasks.Add(task);
         }
 
         private void makeClient(int delay) {
             makeClient(delay, 0);
         }
 
-        private void waitForTasks(List<Task> tasks) {
-            Task[] waitFor;
-            lock (lockme) {
-                waitFor = tasks.ToArray();
-            }
-            Task.WaitAll(waitFor);
-        }
-
         private void start() {
             DateTime start = DateTime.Now;
             Console.WriteLine("Starting clients...");
 
-            int[] iList = new[]  { 
-                0,1,1,2,
-                10, 20, 30, 40};
-            foreach (int delay in iList) {
+            foreach (int delay in new int[] { 10, 20, 30, 40 }) {
                 makeClient(delay, 0); ;
             }
             makeClient(15, 40);
-            Console.WriteLine("Done making");
+            Console.WriteLine("Done making. Please wait 20 seconds.");
 
-            tasks.Add(displayThreads());
-
-            waitForTasks(tasks);
+            Task.WaitAll(tasks.ToArray());
             Console.WriteLine("All done.");
         }
     }
